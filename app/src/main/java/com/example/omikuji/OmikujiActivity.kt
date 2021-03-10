@@ -7,17 +7,19 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.Vibrator
 import android.preference.PreferenceManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.fortune.*
 import kotlinx.android.synthetic.main.omikuji.*
 
 class OmikujiActivity : AppCompatActivity(), SensorEventListener {
+
+    lateinit var vibrator: Vibrator;
 
     lateinit var manager: SensorManager
 
@@ -33,6 +35,7 @@ class OmikujiActivity : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.omikuji)
 
+        vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         manager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         // 設定反映
@@ -65,6 +68,12 @@ class OmikujiActivity : AppCompatActivity(), SensorEventListener {
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_DOWN) {
             if (omikujiNumber < 0 && omikujiBox.finish) {
+
+                val pref = PreferenceManager.getDefaultSharedPreferences(this)
+                if(pref.getBoolean("vibration", false)) {
+                    vibrator.vibrate(50L)
+                }
+
                 drawResult()
             }
         }
@@ -119,18 +128,24 @@ class OmikujiActivity : AppCompatActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         val sensor = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
     }
 
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
     }
 
+
     override fun onSensorChanged(event: SensorEvent?) {
-        val value = event?.values?.get(0)
-        if (value != null && 10 < value) {
-            val toast = Toast.makeText(this, "加速度 : ${value}", Toast.LENGTH_LONG)
-            toast.show()
+        if (omikujiBox.chkShake(event)) {
+            if(omikujiNumber < 0) {
+                omikujiBox.shake()
+            }
         }
+//        val value = event?.values?.get(0)
+//        if (value != null && 10 < value) {
+//            val toast = Toast.makeText(this, "加速度 : ${value}", Toast.LENGTH_LONG)
+//            toast.show()
+//        }
     }
 }
